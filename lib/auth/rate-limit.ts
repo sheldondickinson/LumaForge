@@ -14,16 +14,25 @@ export function hashLoginIdentifier(email: string) {
 export async function isLoginBlocked(identifierHash: string) {
   const { client } = getDatabaseConnection();
   const [record] = await client<
-    { blocked_until: Date | null; failed_count: number }[]
+    { blocked_until: Date | string | null; failed_count: number }[]
   >`
     select blocked_until, failed_count
     from auth_rate_limits
     where identifier_hash = ${identifierHash}
   `;
 
-  return Boolean(
-    record?.blocked_until && record.blocked_until.getTime() > Date.now(),
-  );
+  const blockedUntil = record?.blocked_until;
+
+  if (!blockedUntil) {
+    return false;
+  }
+
+  const blockedUntilMilliseconds =
+    blockedUntil instanceof Date
+      ? blockedUntil.getTime()
+      : Date.parse(blockedUntil);
+
+  return blockedUntilMilliseconds > Date.now();
 }
 
 export async function recordFailedLogin(identifierHash: string) {
