@@ -1,0 +1,78 @@
+name: lumaforge-production
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      TZ: ${TZ:-Australia/Sydney}
+    volumes:
+      - postgres-production:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - backend
+
+  app:
+    image: lumaforge:${LUMAFORGE_IMAGE_TAG:?LUMAFORGE_IMAGE_TAG is required}
+    build:
+      context: .
+      args:
+        VERSION: ${LUMAFORGE_VERSION:?LUMAFORGE_VERSION is required}
+        VCS_REF: ${LUMAFORGE_COMMIT_SHA:?LUMAFORGE_COMMIT_SHA is required}
+        BUILD_DATE: ${LUMAFORGE_BUILD_DATE:?LUMAFORGE_BUILD_DATE is required}
+    environment:
+      NODE_ENV: production
+      TZ: ${TZ:-Australia/Sydney}
+      APP_URL: ${APP_URL:?APP_URL is required}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      ATTACHMENT_STORAGE_PATH: /data/attachments
+    ports:
+      - "${LUMAFORGE_BIND_ADDRESS:-127.0.0.1}:${LUMAFORGE_PORT:-3000}:3000"
+    volumes:
+      - attachments-production:/data/attachments
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 8
+    restart: unless-stopped
+    networks:
+      - backend
+      - frontend
+
+volumes:
+  postgres-production:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${NAS_DATA_PATH:?NAS_DATA_PATH is required}/postgres
+  attachments-production:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${NAS_DATA_PATH:?NAS_DATA_PATH is required}/attachments
+
+networks:
+  backend:
+    internal: true
+  frontend:

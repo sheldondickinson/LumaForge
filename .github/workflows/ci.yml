@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: test
+      TZ: Australia/Sydney
+      APP_URL: http://127.0.0.1:3000
+      AUTH_SECRET: ci-only-placeholder-not-for-production
+      POSTGRES_DB: lumaforge_test
+      POSTGRES_USER: lumaforge_test
+      POSTGRES_PASSWORD: ci-only-password
+      DATABASE_URL: postgresql://lumaforge_test:ci-only-password@127.0.0.1:5432/lumaforge_test
+      ATTACHMENT_STORAGE_PATH: /tmp/lumaforge-test-attachments
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: lumaforge_test
+          POSTGRES_USER: lumaforge_test
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lumaforge_test -d lumaforge_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Apply migrations
+        run: pnpm db:migrate
+
+      - name: Run unit and integration tests
+        run: pnpm test
+
+      - name: Build production application
+        run: pnpm build
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run browser smoke test
+        run: pnpm test:e2e
+
+      - name: Validate Docker image build
+        run: >-
+          docker build
+          --build-arg VERSION=ci
+          --build-arg VCS_REF=${{ github.sha }}
+          --build-arg BUILD_DATE=ci
+          .

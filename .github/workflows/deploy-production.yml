@@ -1,0 +1,94 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version label for this deliberate deployment
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lumaforge-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy on NAS runner
+    environment: production
+    runs-on:
+      - self-hosted
+      - linux
+      - lumaforge
+      - production
+    timeout-minutes: 45
+    env:
+      NAS_DEPLOY_PATH: ${{ vars.NAS_DEPLOY_PATH }}
+      NAS_DATA_PATH: ${{ vars.NAS_DATA_PATH }}
+      NAS_BACKUP_PATH: ${{ vars.NAS_BACKUP_PATH }}
+      HEALTH_URL: ${{ vars.LUMAFORGE_HEALTH_URL }}
+      LUMAFORGE_VERSION: ${{ inputs.version }}
+      LUMAFORGE_IMAGE_TAG: ${{ github.sha }}
+      LUMAFORGE_COMMIT_SHA: ${{ github.sha }}
+      LUMAFORGE_BUILD_DATE: ${{ github.run_id }}
+
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Confirm production prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -n "${NAS_DEPLOY_PATH}"
+          test -n "${NAS_DATA_PATH}"
+          test -n "${NAS_BACKUP_PATH}"
+          test -n "${HEALTH_URL}"
+          test -f "${NAS_DEPLOY_PATH}/.env"
+          test -d "${NAS_DATA_PATH}/postgres"
+          test -d "${NAS_DATA_PATH}/attachments"
+          test -d "${NAS_BACKUP_PATH}/postgres"
+
+      - name: Build versioned image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker build \
+            --build-arg "VERSION=${LUMAFORGE_VERSION}" \
+            --build-arg "VCS_REF=${LUMAFORGE_COMMIT_SHA}" \
+            --build-arg "BUILD_DATE=${LUMAFORGE_BUILD_DATE}" \
+            --tag "lumaforge:${LUMAFORGE_IMAGE_TAG}" \
+            .
+
+      - name: Install reviewed Compose definition
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          install -m 0644 compose.production.yaml "${NAS_DEPLOY_PATH}/compose.production.yaml"
+
+      - name: Back up, migrate, deploy, and verify
+        shell: bash
+        env:
+          ENV_FILE: ${{ env.NAS_DEPLOY_PATH }}/.env
+          COMPOSE_FILE: ${{ env.NAS_DEPLOY_PATH }}/compose.production.yaml
+        run: scripts/deploy-production.sh
+
+      - name: Capture deployment state
+        if: always()
+        shell: bash
+        env:
+          ENV_FILE: ${{ env.NAS_DEPLOY_PATH }}/.env
+          COMPOSE_FILE: ${{ env.NAS_DEPLOY_PATH }}/compose.production.yaml
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "${NAS_DEPLOY_PATH}/logs"
+          docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" ps \
+            >"${NAS_DEPLOY_PATH}/logs/deployment-${GITHUB_RUN_ID}.log" 2>&1 || true
+          docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" logs \
+            --no-color --tail=200 \
+            >>"${NAS_DEPLOY_PATH}/logs/deployment-${GITHUB_RUN_ID}.log" 2>&1 || true
