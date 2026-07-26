@@ -1,0 +1,47 @@
+name: lumaforge-development
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lumaforge}
+      POSTGRES_USER: ${POSTGRES_USER:-lumaforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-with-a-strong-password}
+      TZ: ${TZ:-Australia/Sydney}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-development:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      args:
+        VERSION: ${LUMAFORGE_VERSION:-development}
+        VCS_REF: ${LUMAFORGE_COMMIT_SHA:-local}
+        BUILD_DATE: ${LUMAFORGE_BUILD_DATE:-local}
+    environment:
+      NODE_ENV: development
+      TZ: ${TZ:-Australia/Sydney}
+      APP_URL: http://localhost:3000
+      AUTH_SECRET: ${AUTH_SECRET:-replace-with-a-long-random-value}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-lumaforge}:${POSTGRES_PASSWORD:-replace-with-a-strong-password}@postgres:5432/${POSTGRES_DB:-lumaforge}
+      ATTACHMENT_STORAGE_PATH: /data/attachments
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - attachments-development:/data/attachments
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-development:
+  attachments-development:
