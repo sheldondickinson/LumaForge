@@ -14,6 +14,9 @@ The repository owner must nominate a private reporting channel before the first 
 
 - Secrets and production `.env` files stay outside the repository.
 - Administrative endpoints must require authentication before they are introduced.
+- Local passwords use Argon2id and no default administrator credential exists.
+- Session cookies are HTTP-only, same-site strict, and secure in production.
+- Repeated failed sign-ins are durably rate-limited without storing the email in the rate-limit key.
 - Input is validated at application boundaries.
 - Containers run without root privileges.
 - PostgreSQL is not exposed publicly in production.

@@ -1,6 +1,6 @@
 # ADR 0003: Local authentication direction
 
-- Status: Proposed
+- Status: Accepted
 - Date: 26/07/2026
 
 ## Context
@@ -9,8 +9,16 @@ The first self-hosted release requires secure local administrator authentication
 
 ## Decision
 
-Implement database-backed local accounts and server-managed sessions in the next reviewed milestone. Passwords will use a strong memory-hard hashing function, cookies will be secure, HTTP-only, same-site, and rotated, and administrator creation will use a first-run or explicit CLI bootstrap flow. No default credential will exist.
+Use database-backed local accounts and opaque, server-managed sessions. Passwords use Argon2id with 64 MiB memory, three passes, and a 32-byte output. Only a SHA-256 hash of each random 256-bit session token is stored.
+
+Administrator creation uses an explicit CLI flow protected by a PostgreSQL transaction-level advisory lock. The command succeeds only while the user table is empty and never accepts a password as a command-line argument. No default credential exists.
+
+Session cookies are HTTP-only, same-site strict, path-scoped to `/`, and secure in production. Sessions expire after 12 hours and can be revoked. Application layouts perform the authoritative database session check; the Next.js proxy only provides an early cookie-presence redirect.
+
+Failed sign-ins are rate-limited by an HMAC-derived email identifier in PostgreSQL. Sign-in, sign-out, failed authentication, and administrator bootstrap actions create audit events.
 
 ## Consequences
 
-The bootstrap shell is not an administrative product surface and does not expose mutation endpoints. Authentication is deliberately not approximated with insecure placeholder logic.
+This remains a local authentication system and does not require an external identity provider. Administrator, Editor, and Viewer roles exist in the schema, although only Administrator creation is exposed in this milestone.
+
+Session rotation, password change/recovery, multi-user administration, role assignment, and periodic expired-session cleanup remain future reviewed work. Production requires TLS at the reverse proxy or application boundary for secure cookies.

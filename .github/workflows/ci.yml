@@ -27,6 +27,8 @@ jobs:
       POSTGRES_PASSWORD: ci-only-password
       DATABASE_URL: postgresql://lumaforge_test:ci-only-password@127.0.0.1:5432/lumaforge_test
       ATTACHMENT_STORAGE_PATH: /tmp/lumaforge-test-attachments
+      E2E_ADMIN_EMAIL: e2e-administrator@example.test
+      E2E_ADMIN_PASSWORD: ci-only-correct-horse-battery-staple
     services:
       postgres:
         image: postgres:17-alpine
@@ -77,6 +79,9 @@ jobs:
 
       - name: Build production application
         run: pnpm build
+
+      - name: Create isolated browser-test administrator
+        run: printf '%s\n' "$E2E_ADMIN_PASSWORD" | pnpm admin:create --email "$E2E_ADMIN_EMAIL" --password-stdin
 
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
