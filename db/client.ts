@@ -5,10 +5,12 @@ import { getServerEnvironment } from "@/lib/env";
 type DatabaseHealth =
   { status: "ok" } | { status: "error"; message: "Database connection failed" };
 
-export function createDatabaseClient() {
+export type DatabaseConnection = ReturnType<typeof createDatabaseClient>;
+
+export function createDatabaseClient(options?: { max?: number }) {
   const { DATABASE_URL } = getServerEnvironment();
   const client = postgres(DATABASE_URL, {
-    max: 10,
+    max: options?.max ?? 10,
     idle_timeout: 20,
     connect_timeout: 10,
   });
@@ -19,11 +21,26 @@ export function createDatabaseClient() {
   };
 }
 
-export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
-  let connection: ReturnType<typeof createDatabaseClient> | undefined;
+const globalDatabase = globalThis as typeof globalThis & {
+  lumaforgeDatabase?: DatabaseConnection;
+};
 
+export function getDatabaseConnection() {
+  if (!globalDatabase.lumaforgeDatabase) {
+    globalDatabase.lumaforgeDatabase = createDatabaseClient();
+  }
+
+  return globalDatabase.lumaforgeDatabase;
+}
+
+export async function closeDatabaseConnection() {
+  await globalDatabase.lumaforgeDatabase?.client.end();
+  globalDatabase.lumaforgeDatabase = undefined;
+}
+
+export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
   try {
-    connection = createDatabaseClient();
+    const connection = getDatabaseConnection();
     await connection.client`select 1`;
     return { status: "ok" };
   } catch {
@@ -31,7 +48,5 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
       status: "error",
       message: "Database connection failed",
     };
-  } finally {
-    await connection?.client.end();
   }
 }
