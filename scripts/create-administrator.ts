@@ -87,34 +87,43 @@ async function readHiddenPassword(prompt: string) {
   });
 }
 
-const { email, passwordFromStandardInput } = readArguments(
-  process.argv.slice(2),
-);
-let password: string;
-
-if (passwordFromStandardInput) {
-  password = await readPasswordFromStandardInput();
-} else {
-  password = await readHiddenPassword("Administrator password: ");
-  const confirmation = await readHiddenPassword(
-    "Confirm administrator password: ",
+async function main() {
+  const { email, passwordFromStandardInput } = readArguments(
+    process.argv.slice(2),
   );
+  let password: string;
 
-  if (password !== confirmation) {
-    throw new Error("The password confirmation did not match.");
-  }
-}
-
-try {
-  const user = await createFirstAdministrator({ email, password });
-  console.info(`Administrator created for ${user.email}.`);
-} catch (error) {
-  if (error instanceof AdministratorAlreadyExistsError) {
-    console.error(error.message);
-    process.exitCode = 2;
+  if (passwordFromStandardInput) {
+    password = await readPasswordFromStandardInput();
   } else {
-    throw error;
+    password = await readHiddenPassword("Administrator password: ");
+    const confirmation = await readHiddenPassword(
+      "Confirm administrator password: ",
+    );
+
+    if (password !== confirmation) {
+      throw new Error("The password confirmation did not match.");
+    }
   }
-} finally {
-  await closeDatabaseConnection();
+
+  try {
+    const user = await createFirstAdministrator({ email, password });
+    console.info(`Administrator created for ${user.email}.`);
+  } catch (error) {
+    if (error instanceof AdministratorAlreadyExistsError) {
+      console.error(error.message);
+      process.exitCode = 2;
+    } else {
+      throw error;
+    }
+  } finally {
+    await closeDatabaseConnection();
+  }
 }
+
+main().catch((error: unknown) => {
+  console.error(
+    error instanceof Error ? error.message : "Administrator creation failed.",
+  );
+  process.exitCode = 1;
+});
