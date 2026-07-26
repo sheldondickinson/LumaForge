@@ -97,7 +97,7 @@ export async function createFirstAdministrator(input: {
         'authentication.administrator_created',
         'user',
         ${user.id},
-        ${transaction.json({ bootstrapMethod: "cli" })}
+        ${JSON.stringify({ bootstrapMethod: "cli" })}::jsonb
       )
     `;
 
