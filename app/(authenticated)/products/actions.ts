@@ -21,6 +21,7 @@ function productFormInput(formData: FormData) {
     description: formData.get("description"),
     voltageV: formData.get("voltageV"),
     pixelCount: formData.get("pixelCount"),
+    currentPerPixelMa: formData.get("currentPerPixelMa"),
     spacingMm: formData.get("spacingMm"),
     protocol: formData.get("protocol"),
     connector: formData.get("connector"),

@@ -77,6 +77,15 @@ export function ProductRevisionForm({ product }: { product: ProductDetail }) {
           />
         </label>
         <label className="space-y-1">
+          <span className="text-sm font-medium">Current per pixel (mA)</span>
+          <input
+            name="currentPerPixelMa"
+            inputMode="decimal"
+            defaultValue={value(product.specifications, "currentPerPixelMa")}
+            className="min-h-11 w-full rounded-lg border bg-[var(--surface)] px-3"
+          />
+        </label>
+        <label className="space-y-1">
           <span className="text-sm font-medium">Spacing (mm)</span>
           <input
             name="spacingMm"

@@ -75,6 +75,14 @@ identifiers are derived from controller code, output number, prop number and
 string number; they are not asset identity. Reassignments close previous
 effective-dated rows and retain deployment history.
 
+## Validation boundary
+
+Validation runs capture immutable results from structured controller, output,
+component, product and PSU facts. Pure domain rules calculate protocol,
+voltage, node, output-current and PSU-capacity findings using fixed-precision
+decimal scaling. Each result retains severity and evidence. An override appends
+an actor, reason and timestamp without changing the original finding.
+
 ## Environment boundaries
 
 Development, test, and production use PostgreSQL 17 and the same migration files, application code, environment-variable names, storage abstraction, and validation rules. They do not share databases, credentials, session secrets, attachment directories, backups, or generated data.

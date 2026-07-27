@@ -58,8 +58,8 @@ export default async function PowerPage() {
         <div>
           <h2 className="text-xl font-semibold">Controller power banks</h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-            A replacement closes the previous allocation. Capacity validation
-            follows in the next milestone.
+            A replacement closes the previous allocation. Run validation from
+            the controller after changing a bank supply.
           </p>
         </div>
         {banks.length ? (

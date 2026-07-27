@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDatabaseConnection, createDatabaseClient } from "@/db/client";
-import { createDisplayElement } from "@/lib/assemblies/service";
+import {
+  assignComponent,
+  createDisplayElement,
+} from "@/lib/assemblies/service";
 import type { AuthenticatedUser } from "@/lib/auth/service";
 import {
   allocatePower,
@@ -10,6 +13,11 @@ import {
   createPsu,
   getControllerDetail,
 } from "@/lib/controllers-power/service";
+import {
+  getLatestValidationRun,
+  overrideValidationResult,
+  runControllerValidation,
+} from "@/lib/validations/service";
 
 const databaseUrl = process.env.DATABASE_URL;
 const hasIsolatedDatabase = Boolean(
@@ -28,6 +36,7 @@ describe.skipIf(!hasIsolatedDatabase)(
     let controllerAssetId: string;
     let psuAssetId: string;
     let propAssetId: string;
+    let componentAssetId: string;
     let controllerId: string;
     let psuId: string;
     let positionId: string;
@@ -55,6 +64,7 @@ describe.skipIf(!hasIsolatedDatabase)(
       controllerAssetId = randomUUID();
       psuAssetId = randomUUID();
       propAssetId = randomUUID();
+      componentAssetId = randomUUID();
       originalControllerIdentifier = `CTRL-${Date.now()}`;
       await connection.client`
       insert into assets (
@@ -63,7 +73,8 @@ describe.skipIf(!hasIsolatedDatabase)(
       values
         (${controllerAssetId}, ${classId("CTRL")!}, ${originalControllerIdentifier}, 'Integration controller', ${user.id}, ${user.id}),
         (${psuAssetId}, ${classId("PSU")!}, ${`PSU-${Date.now()}`}, 'Integration PSU', ${user.id}, ${user.id}),
-        (${propAssetId}, ${classId("PROP")!}, ${`PROP-${Date.now()}`}, 'Integration prop', ${user.id}, ${user.id})
+        (${propAssetId}, ${classId("PROP")!}, ${`PROP-${Date.now()}`}, 'Integration prop', ${user.id}, ${user.id}),
+        (${componentAssetId}, ${classId("PROP")!}, ${`COMP-${Date.now()}`}, 'Integration component', ${user.id}, ${user.id})
     `;
       const element = await createDisplayElement(
         {
@@ -78,6 +89,14 @@ describe.skipIf(!hasIsolatedDatabase)(
       where display_element_id = ${element.id} and sequence = 2
     `;
       positionId = position!.id;
+      await assignComponent(
+        positionId,
+        {
+          componentAssetId,
+          notes: "Install integration component",
+        },
+        user,
+      );
       controllerId = (
         await createController(
           {
@@ -108,6 +127,9 @@ describe.skipIf(!hasIsolatedDatabase)(
       if (!connection) return;
       await connection.client`
       truncate table
+        validation_overrides,
+        validation_results,
+        validation_runs,
         power_allocations,
         output_assignments,
         controller_outputs,
@@ -189,6 +211,24 @@ describe.skipIf(!hasIsolatedDatabase)(
       );
       const detail = await getControllerDetail(controllerId);
       expect(detail?.banks[0]?.psuIdentifier).toMatch(/^PSU-/);
+    });
+
+    it("persists validation evidence and documented overrides", async () => {
+      await runControllerValidation(controllerId, user);
+      const run = await getLatestValidationRun(controllerId);
+      expect(run?.results.length).toBeGreaterThan(0);
+      const overridable = run?.results.find((result) => result.overrideAllowed);
+      expect(overridable).toBeDefined();
+      await overrideValidationResult(
+        overridable!.id,
+        { reason: "Accepted for controlled integration testing" },
+        user,
+      );
+      const updated = await getLatestValidationRun(controllerId);
+      expect(
+        updated?.results.find((result) => result.id === overridable!.id)
+          ?.overrideReason,
+      ).toBe("Accepted for controlled integration testing");
     });
   },
 );
