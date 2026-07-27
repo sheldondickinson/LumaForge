@@ -29,6 +29,13 @@
       "when": 1785149853946,
       "tag": "0003_locations_inventory_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785152342231,
+      "tag": "0004_relationships_assemblies",
+      "breakpoints": true
     }
   ]
 }

@@ -61,6 +61,13 @@ export const stocktakeOutcome = pgEnum("stocktake_outcome", [
   "missing",
 ]);
 
+export const assetRelationshipType = pgEnum("asset_relationship_type", [
+  "contains",
+  "mounted_on",
+  "connected_to",
+  "component_of",
+]);
+
 export const users = pgTable(
   "users",
   {
@@ -556,6 +563,135 @@ export const stocktakeEntries = pgTable(
     check(
       "stocktake_entries_scan_consistent",
       sql`(${table.outcome} = 'missing' and ${table.scannedAt} is null and ${table.scannedBy} is null) or (${table.outcome} <> 'missing' and ${table.scannedAt} is not null)`,
+    ),
+  ],
+);
+
+export const displayElements = pgTable(
+  "display_elements",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("display_elements_asset_unique").on(table.assetId),
+    check(
+      "display_elements_name_not_empty",
+      sql`length(trim(${table.name})) > 0`,
+    ),
+  ],
+);
+
+export const componentPositions = pgTable(
+  "component_positions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    displayElementId: uuid("display_element_id")
+      .notNull()
+      .references(() => displayElements.id, { onDelete: "restrict" }),
+    code: text("code").notNull(),
+    name: text("name").notNull(),
+    sequence: integer("sequence").notNull(),
+    connector: text("connector"),
+    notes: text("notes"),
+  },
+  (table) => [
+    uniqueIndex("component_positions_element_code_unique").on(
+      table.displayElementId,
+      table.code,
+    ),
+    uniqueIndex("component_positions_element_sequence_unique").on(
+      table.displayElementId,
+      table.sequence,
+    ),
+    check(
+      "component_positions_code_format",
+      sql`${table.code} ~ '^[A-Z][A-Z0-9-]{0,31}$'`,
+    ),
+    check(
+      "component_positions_name_not_empty",
+      sql`length(trim(${table.name})) > 0`,
+    ),
+    check("component_positions_sequence_valid", sql`${table.sequence} > 0`),
+  ],
+);
+
+export const assetRelationships = pgTable(
+  "asset_relationships",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    relationshipType: assetRelationshipType("relationship_type").notNull(),
+    sourceAssetId: uuid("source_asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "restrict" }),
+    targetAssetId: uuid("target_asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "restrict" }),
+    componentPositionId: uuid("component_position_id").references(
+      () => componentPositions.id,
+      { onDelete: "restrict" },
+    ),
+    sourceConnector: text("source_connector"),
+    targetConnector: text("target_connector"),
+    sequence: integer("sequence"),
+    configurationRevision: integer("configuration_revision")
+      .default(1)
+      .notNull(),
+    effectiveFrom: timestamp("effective_from", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+    effectiveTo: timestamp("effective_to", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    notes: text("notes"),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    uniqueIndex("asset_relationships_current_position_unique")
+      .on(table.componentPositionId)
+      .where(sql`${table.effectiveTo} is null`),
+    index("asset_relationships_source_effective_index").on(
+      table.sourceAssetId,
+      table.effectiveTo,
+    ),
+    index("asset_relationships_target_effective_index").on(
+      table.targetAssetId,
+      table.effectiveTo,
+    ),
+    check(
+      "asset_relationships_distinct_assets",
+      sql`${table.sourceAssetId} <> ${table.targetAssetId}`,
+    ),
+    check(
+      "asset_relationships_revision_valid",
+      sql`${table.configurationRevision} > 0`,
+    ),
+    check(
+      "asset_relationships_dates_valid",
+      sql`${table.effectiveTo} is null or ${table.effectiveTo} >= ${table.effectiveFrom}`,
+    ),
+    check(
+      "asset_relationships_position_type_valid",
+      sql`${table.componentPositionId} is null or ${table.relationshipType} = 'component_of'`,
     ),
   ],
 );

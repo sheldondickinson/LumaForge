@@ -141,6 +141,9 @@ describe.skipIf(!hasIsolatedDatabase)(
 
       await connection.client`
       truncate table
+        asset_relationships,
+        component_positions,
+        display_elements,
         stocktake_entries,
         stocktakes,
         asset_location_assignments,
