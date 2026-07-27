@@ -9,11 +9,13 @@ A self-hosted asset, inventory and configuration management platform for pixel d
 LumaForge has a working authenticated application foundation plus the first
 operational product and asset workflows. Users can create revisioned product
 definitions, allocate permanent identifiers to individually tracked physical
-assets, search the catalogue and inventory, and inspect asset audit history.
-Location, relationship, controller, electrical and xLights workflows remain
-deferred to reviewed milestones.
+assets, organise hierarchical storage locations, retain asset movement history,
+run location stocktakes, and print local QR and Code 128 labels. Relationship,
+controller, electrical and xLights workflows remain deferred to reviewed
+milestones.
 
-The current product and asset milestone remains under review.
+The product and asset milestone and its stacked location and inventory
+milestone remain under review.
 
 ## Architecture
 
@@ -116,6 +118,21 @@ Product changes append revisions; existing history is never rewritten. Asset
 identifiers and classes are immutable, hard deletion is rejected, and physical
 specification overrides require a reason. See
 [ADR 0005](docs/decisions/0005-product-revisions-and-asset-identifiers.md).
+
+## Locations, movements and stocktakes
+
+Create stable shed, rack, shelf and tote codes under **Locations**. Move an
+asset from its detail screen; the previous effective-dated assignment remains
+visible and immutable.
+
+Stocktakes include the selected location and its descendants. Scans record
+confirmed and discrepant assets, and completion records unscanned expected
+assets as missing without moving anything automatically.
+
+Each asset has a printable QR and Code 128 label. QR codes use a relative
+authenticated route such as `/scan/assets/PX-000184`, keeping labels portable
+between local and future NAS hostnames. See
+[ADR 0006](docs/decisions/0006-effective-dated-locations-and-stocktakes.md).
 
 ## Quality checks
 
