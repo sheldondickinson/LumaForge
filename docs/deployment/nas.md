@@ -31,6 +31,18 @@ Recommended layout:
 
 Set `NAS_DEPLOY_PATH`, `NAS_DATA_PATH`, and `NAS_BACKUP_PATH` on the runner. Persistent data stays separate from the checked-out source where practical.
 
+## First administrator
+
+After the first reviewed deployment and migration, create the administrator from an interactive shell on the NAS runner or deployment host:
+
+```bash
+docker compose --env-file <NAS_DEPLOY_PATH>/lumaforge/.env \
+  -f <NAS_DEPLOY_PATH>/lumaforge/compose.production.yaml \
+  run --rm app node scripts/create-administrator.mjs --email you@example.com
+```
+
+The command prompts twice without echoing the password and refuses to create an account when any user already exists. Do not place the password in the command, runner logs, repository, or GitHub secrets unless a later deliberate automation design requires it.
+
 ## Secrets
 
 Create `AUTH_SECRET` and `POSTGRES_PASSWORD` using a trusted password manager or local cryptographic generator. Place them directly in the NAS `.env` with owner-only permissions. Do not print, commit, upload, or copy them back to a development machine.

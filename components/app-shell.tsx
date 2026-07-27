@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import type { AuthenticatedUser } from "@/lib/auth/service";
 
 const navigation = [
   "Dashboard",
@@ -17,7 +18,15 @@ const navigation = [
   "Settings",
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  user,
+  logoutAction,
+}: {
+  children: React.ReactNode;
+  user: AuthenticatedUser;
+  logoutAction: () => Promise<void>;
+}) {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 border-b bg-[var(--surface)]/95 backdrop-blur">
@@ -40,6 +49,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline">Search (planned)</span>
             </button>
             <ThemeToggle />
+            <div className="hidden text-right sm:block">
+              <p className="max-w-52 truncate text-sm font-medium">
+                {user.email}
+              </p>
+              <p className="text-xs text-slate-500 capitalize">{user.role}</p>
+            </div>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm font-medium hover:bg-[var(--surface-muted)]"
+              >
+                Sign out
+              </button>
+            </form>
           </div>
         </div>
       </header>

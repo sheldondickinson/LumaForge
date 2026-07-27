@@ -27,6 +27,8 @@ jobs:
       POSTGRES_PASSWORD: ci-only-password
       DATABASE_URL: postgresql://lumaforge_test:ci-only-password@127.0.0.1:5432/lumaforge_test
       ATTACHMENT_STORAGE_PATH: /tmp/lumaforge-test-attachments
+      E2E_ADMIN_EMAIL: e2e-administrator@example.test
+      E2E_ADMIN_PASSWORD: ci-only-correct-horse-battery-staple
     services:
       postgres:
         image: postgres:17-alpine
@@ -78,16 +80,27 @@ jobs:
       - name: Build production application
         run: pnpm build
 
+      - name: Build and validate production Docker image
+        run: |
+          docker build \
+            --build-arg VERSION=ci \
+            --build-arg VCS_REF=${{ github.sha }} \
+            --build-arg BUILD_DATE=ci \
+            --tag lumaforge:ci \
+            .
+          printf '%s\n' "$E2E_ADMIN_PASSWORD" | docker run --rm --interactive \
+            --network host \
+            --env DATABASE_URL \
+            --env APP_URL \
+            --env AUTH_SECRET \
+            --env NODE_ENV \
+            lumaforge:ci \
+            node scripts/create-administrator.mjs \
+            --email "$E2E_ADMIN_EMAIL" \
+            --password-stdin
+
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run browser smoke test
         run: pnpm test:e2e
-
-      - name: Validate Docker image build
-        run: >-
-          docker build
-          --build-arg VERSION=ci
-          --build-arg VCS_REF=${{ github.sha }}
-          --build-arg BUILD_DATE=ci
-          .

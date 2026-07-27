@@ -6,7 +6,7 @@ A self-hosted asset, inventory and configuration management platform for pixel d
 
 ## Status
 
-LumaForge is at the repository bootstrap milestone. This foundation provides a responsive Next.js shell, PostgreSQL and Drizzle migration plumbing, health endpoints, Docker definitions, automated checks, and deployment documentation. Asset-management and authentication workflows are deliberately deferred to reviewed milestones.
+LumaForge has a working application foundation with a responsive authenticated shell, secure local administrator sign-in, PostgreSQL and Drizzle migration plumbing, health endpoints, Docker definitions, automated checks, and deployment documentation. Asset-management workflows remain deliberately deferred to reviewed milestones.
 
 Screenshots will be added when the first operational module is ready for review.
 
@@ -40,10 +40,11 @@ docker compose up -d postgres
 pnpm install
 pnpm db:migrate
 pnpm db:seed
+pnpm admin:create --email you@example.com
 pnpm dev
 ```
 
-Open <http://localhost:3000>. PostgreSQL runs in Docker; Next.js runs directly on macOS for fast hot reload. Use placeholder development secrets only, and never point `DATABASE_URL` at production.
+The administrator command prompts for a password twice without echoing it. Open <http://localhost:3000> and sign in. PostgreSQL runs in Docker; Next.js runs directly on macOS for fast hot reload. Use placeholder development secrets only, and never point `DATABASE_URL` at production.
 
 ## Full-container development
 
@@ -58,17 +59,17 @@ This starts the application and PostgreSQL. It is not the default daily developm
 
 ## Environment variables
 
-| Variable                  | Purpose                                               |
-| ------------------------- | ----------------------------------------------------- |
-| `NODE_ENV`                | Runtime environment                                   |
-| `TZ`                      | Runtime time zone; defaults to `Australia/Sydney`     |
-| `APP_URL`                 | Canonical application URL                             |
-| `AUTH_SECRET`             | Long random value reserved for secure session signing |
-| `POSTGRES_DB`             | PostgreSQL database name                              |
-| `POSTGRES_USER`           | PostgreSQL application user                           |
-| `POSTGRES_PASSWORD`       | PostgreSQL password                                   |
-| `DATABASE_URL`            | PostgreSQL connection URL                             |
-| `ATTACHMENT_STORAGE_PATH` | Persistent attachment directory                       |
+| Variable                  | Purpose                                                   |
+| ------------------------- | --------------------------------------------------------- |
+| `NODE_ENV`                | Runtime environment                                       |
+| `TZ`                      | Runtime time zone; defaults to `Australia/Sydney`         |
+| `APP_URL`                 | Canonical application URL                                 |
+| `AUTH_SECRET`             | At least 32 random characters for authentication security |
+| `POSTGRES_DB`             | PostgreSQL database name                                  |
+| `POSTGRES_USER`           | PostgreSQL application user                               |
+| `POSTGRES_PASSWORD`       | PostgreSQL password                                       |
+| `DATABASE_URL`            | PostgreSQL connection URL                                 |
+| `ATTACHMENT_STORAGE_PATH` | Persistent attachment directory                           |
 
 `.env.example` contains placeholders only. Development, test, and production values must remain isolated.
 
@@ -79,9 +80,26 @@ pnpm db:generate  # generate a reviewed migration after a schema change
 pnpm db:migrate   # apply committed migrations
 pnpm db:seed      # deterministic development-only seed command
 pnpm db:studio    # inspect a development database
+pnpm admin:create # create the first local administrator
 ```
 
 Application startup does not run migrations. Review [migration guidance](docs/development/database-migrations.md) before changing the schema.
+
+## Local administrator authentication
+
+LumaForge has no default account or password. After applying migrations, create the first administrator interactively:
+
+```bash
+pnpm admin:create --email you@example.com
+```
+
+For deliberate non-interactive automation, send the password over standard input rather than placing it in a command argument:
+
+```bash
+printf '%s\n' "$ADMIN_PASSWORD" | pnpm admin:create --email you@example.com --password-stdin
+```
+
+The command succeeds only when no user exists. Passwords use Argon2id, sessions are database-backed and revocable, cookies are HTTP-only and same-site, and repeated failed sign-ins are rate-limited. See [ADR 0003](docs/decisions/0003-authentication.md).
 
 ## Quality checks
 

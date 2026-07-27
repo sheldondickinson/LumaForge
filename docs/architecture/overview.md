@@ -18,6 +18,10 @@ persistence and external import adapters
 
 React components render state and collect input. They do not calculate electrical values, allocate identifiers, decide compatibility, or revise historical relationships.
 
+## Authentication boundary
+
+Local users, revocable sessions, login rate limits, and audit events live in PostgreSQL. The first administrator is created through an explicit CLI command; there are no default credentials or unauthenticated administration endpoints. Server layouts perform authoritative session validation before rendering the application shell.
+
 ## Data principles
 
 - Database UUIDs are internal identities.

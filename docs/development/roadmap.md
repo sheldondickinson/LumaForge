@@ -12,4 +12,4 @@ Delivery proceeds through reviewed milestones:
 8. Verified NAS deployment, backup, restore, and rollback.
 9. Versioned, read-only xLights import and reconciliation.
 
-The current pull request stops after item 1. Later modules must not be folded into the bootstrap without review.
+The current milestone completes item 2. Product, asset, and later domain modules must remain in separate reviewed changes.

@@ -7,8 +7,9 @@ The MacBook is the primary development environment. Run Next.js directly on macO
 3. Run `docker compose up -d postgres`.
 4. Run `pnpm install --frozen-lockfile`.
 5. Run `pnpm db:migrate` and `pnpm db:seed`.
-6. Run `pnpm dev`.
-7. Open <http://localhost:3000>.
+6. Run `pnpm admin:create --email you@example.com` and enter a development-only password.
+7. Run `pnpm dev`.
+8. Open <http://localhost:3000> and sign in.
 
 Use `docker compose up --build` only when validating the container boundary and networking. Never use the NAS as the ordinary development server.
 
@@ -29,6 +30,7 @@ Use `docker compose up --build` only when validating the container boundary and 
 - `pnpm db:migrate`: apply committed migrations.
 - `pnpm db:seed`: load deterministic development data.
 - `pnpm db:studio`: open Drizzle Studio against a deliberate non-production database.
+- `pnpm admin:create --email <address>`: interactively create the first local administrator after migrations.
 - `pnpm docker:up`: start local PostgreSQL.
 - `pnpm docker:down`: stop the local Compose stack.
 - `pnpm docker:logs`: follow local Compose logs.
