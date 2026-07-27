@@ -12,6 +12,8 @@ The MacBook is the primary development environment. Run Next.js directly on macO
 8. Open <http://localhost:3000> and sign in.
 
 Use `docker compose up --build` only when validating the container boundary and networking. Never use the NAS as the ordinary development server.
+The full container recognises loopback HTTP URLs as local testing and uses an
+HTTP-compatible session cookie. Non-loopback production URLs still require TLS.
 
 ## Command catalogue
 
