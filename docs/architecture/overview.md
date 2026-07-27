@@ -32,6 +32,17 @@ Local users, revocable sessions, login rate limits, and audit events live in Pos
 - Electrical values use decimal-safe database and application representations.
 - Material changes append audit events.
 
+## Product and asset boundary
+
+Product definitions are stable catalogue identities. Product revisions are
+append-only facts, and physical assets point to the exact revision used for
+their catalogue basis. Asset-specific differences are stored as explained
+overrides rather than rewriting the product.
+
+Permanent asset identifiers are allocated inside PostgreSQL transactions by a
+per-class counter. Database constraints and triggers protect revision history,
+asset identity, class consistency and retirement-only lifecycle handling.
+
 ## Environment boundaries
 
 Development, test, and production use PostgreSQL 17 and the same migration files, application code, environment-variable names, storage abstraction, and validation rules. They do not share databases, credentials, session secrets, attachment directories, backups, or generated data.

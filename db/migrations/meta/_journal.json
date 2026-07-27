@@ -15,6 +15,13 @@
       "when": 1785029193518,
       "tag": "0001_authentication_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785147998966,
+      "tag": "0002_product_asset_foundation",
+      "breakpoints": true
     }
   ]
 }
