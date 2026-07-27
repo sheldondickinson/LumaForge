@@ -141,6 +141,14 @@ describe.skipIf(!hasIsolatedDatabase)(
 
       await connection.client`
       truncate table
+        power_allocations,
+        output_assignments,
+        controller_outputs,
+        power_banks,
+        psu_assets,
+        psu_definitions,
+        controller_assets,
+        controller_definitions,
         asset_relationships,
         component_positions,
         display_elements,

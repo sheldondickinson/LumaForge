@@ -7,6 +7,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -692,6 +693,286 @@ export const assetRelationships = pgTable(
     check(
       "asset_relationships_position_type_valid",
       sql`${table.componentPositionId} is null or ${table.relationshipType} = 'component_of'`,
+    ),
+  ],
+);
+
+export const controllerDefinitions = pgTable(
+  "controller_definitions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    manufacturer: text("manufacturer"),
+    model: text("model"),
+    protocol: text("protocol"),
+    outputCount: integer("output_count").notNull(),
+    powerBankCount: integer("power_bank_count").notNull(),
+    notes: text("notes"),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "controller_definitions_name_not_empty",
+      sql`length(trim(${table.name})) > 0`,
+    ),
+    check(
+      "controller_definitions_output_count_valid",
+      sql`${table.outputCount} between 1 and 128`,
+    ),
+    check(
+      "controller_definitions_power_bank_count_valid",
+      sql`${table.powerBankCount} between 1 and 32`,
+    ),
+  ],
+);
+
+export const controllerAssets = pgTable(
+  "controller_assets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "restrict" }),
+    controllerDefinitionId: uuid("controller_definition_id")
+      .notNull()
+      .references(() => controllerDefinitions.id, { onDelete: "restrict" }),
+    controllerCode: text("controller_code").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("controller_assets_asset_unique").on(table.assetId),
+    uniqueIndex("controller_assets_code_unique").on(table.controllerCode),
+    check(
+      "controller_assets_code_format",
+      sql`${table.controllerCode} ~ '^[A-Z][A-Z0-9]{0,7}$'`,
+    ),
+  ],
+);
+
+export const powerBanks = pgTable(
+  "power_banks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    controllerAssetId: uuid("controller_asset_id")
+      .notNull()
+      .references(() => controllerAssets.id, { onDelete: "restrict" }),
+    bankNumber: integer("bank_number").notNull(),
+    name: text("name").notNull(),
+  },
+  (table) => [
+    uniqueIndex("power_banks_controller_number_unique").on(
+      table.controllerAssetId,
+      table.bankNumber,
+    ),
+    check("power_banks_number_valid", sql`${table.bankNumber} > 0`),
+    check("power_banks_name_not_empty", sql`length(trim(${table.name})) > 0`),
+  ],
+);
+
+export const controllerOutputs = pgTable(
+  "controller_outputs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    controllerAssetId: uuid("controller_asset_id")
+      .notNull()
+      .references(() => controllerAssets.id, { onDelete: "restrict" }),
+    powerBankId: uuid("power_bank_id")
+      .notNull()
+      .references(() => powerBanks.id, { onDelete: "restrict" }),
+    outputNumber: integer("output_number").notNull(),
+    name: text("name").notNull(),
+  },
+  (table) => [
+    uniqueIndex("controller_outputs_controller_number_unique").on(
+      table.controllerAssetId,
+      table.outputNumber,
+    ),
+    check("controller_outputs_number_valid", sql`${table.outputNumber} > 0`),
+    check(
+      "controller_outputs_name_not_empty",
+      sql`length(trim(${table.name})) > 0`,
+    ),
+  ],
+);
+
+export const outputAssignments = pgTable(
+  "output_assignments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    controllerOutputId: uuid("controller_output_id")
+      .notNull()
+      .references(() => controllerOutputs.id, { onDelete: "restrict" }),
+    displayElementId: uuid("display_element_id")
+      .notNull()
+      .references(() => displayElements.id, { onDelete: "restrict" }),
+    componentPositionId: uuid("component_position_id")
+      .notNull()
+      .references(() => componentPositions.id, { onDelete: "restrict" }),
+    propNumber: integer("prop_number").notNull(),
+    stringNumber: integer("string_number").notNull(),
+    effectiveFrom: timestamp("effective_from", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+    effectiveTo: timestamp("effective_to", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    reason: text("reason").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    uniqueIndex("output_assignments_current_position_unique")
+      .on(table.componentPositionId)
+      .where(sql`${table.effectiveTo} is null`),
+    index("output_assignments_output_current_index").on(
+      table.controllerOutputId,
+      table.effectiveTo,
+    ),
+    check(
+      "output_assignments_prop_number_valid",
+      sql`${table.propNumber} between 1 and 999`,
+    ),
+    check(
+      "output_assignments_string_number_valid",
+      sql`${table.stringNumber} between 1 and 99`,
+    ),
+    check(
+      "output_assignments_dates_valid",
+      sql`${table.effectiveTo} is null or ${table.effectiveTo} >= ${table.effectiveFrom}`,
+    ),
+    check(
+      "output_assignments_reason_not_empty",
+      sql`length(trim(${table.reason})) > 0`,
+    ),
+  ],
+);
+
+export const psuDefinitions = pgTable(
+  "psu_definitions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    manufacturer: text("manufacturer"),
+    model: text("model"),
+    outputVoltageV: numeric("output_voltage_v", {
+      precision: 10,
+      scale: 3,
+    }).notNull(),
+    maximumCurrentA: numeric("maximum_current_a", {
+      precision: 12,
+      scale: 3,
+    }).notNull(),
+    maximumPowerW: numeric("maximum_power_w", {
+      precision: 12,
+      scale: 3,
+    }).notNull(),
+    notes: text("notes"),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "psu_definitions_name_not_empty",
+      sql`length(trim(${table.name})) > 0`,
+    ),
+    check(
+      "psu_definitions_ratings_valid",
+      sql`${table.outputVoltageV} > 0 and ${table.maximumCurrentA} > 0 and ${table.maximumPowerW} > 0`,
+    ),
+  ],
+);
+
+export const psuAssets = pgTable(
+  "psu_assets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "restrict" }),
+    psuDefinitionId: uuid("psu_definition_id")
+      .notNull()
+      .references(() => psuDefinitions.id, { onDelete: "restrict" }),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [uniqueIndex("psu_assets_asset_unique").on(table.assetId)],
+);
+
+export const powerAllocations = pgTable(
+  "power_allocations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    psuAssetId: uuid("psu_asset_id")
+      .notNull()
+      .references(() => psuAssets.id, { onDelete: "restrict" }),
+    powerBankId: uuid("power_bank_id")
+      .notNull()
+      .references(() => powerBanks.id, { onDelete: "restrict" }),
+    effectiveFrom: timestamp("effective_from", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+    effectiveTo: timestamp("effective_to", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    reason: text("reason").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    uniqueIndex("power_allocations_current_bank_unique")
+      .on(table.powerBankId)
+      .where(sql`${table.effectiveTo} is null`),
+    index("power_allocations_psu_current_index").on(
+      table.psuAssetId,
+      table.effectiveTo,
+    ),
+    check(
+      "power_allocations_dates_valid",
+      sql`${table.effectiveTo} is null or ${table.effectiveTo} >= ${table.effectiveFrom}`,
+    ),
+    check(
+      "power_allocations_reason_not_empty",
+      sql`length(trim(${table.reason})) > 0`,
     ),
   ],
 );
