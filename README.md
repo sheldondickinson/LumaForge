@@ -6,9 +6,14 @@ A self-hosted asset, inventory and configuration management platform for pixel d
 
 ## Status
 
-LumaForge has a working application foundation with a responsive authenticated shell, secure local administrator sign-in, PostgreSQL and Drizzle migration plumbing, health endpoints, Docker definitions, automated checks, and deployment documentation. Asset-management workflows remain deliberately deferred to reviewed milestones.
+LumaForge has a working authenticated application foundation plus the first
+operational product and asset workflows. Users can create revisioned product
+definitions, allocate permanent identifiers to individually tracked physical
+assets, search the catalogue and inventory, and inspect asset audit history.
+Location, relationship, controller, electrical and xLights workflows remain
+deferred to reviewed milestones.
 
-Screenshots will be added when the first operational module is ready for review.
+The current product and asset milestone remains under review.
 
 ## Architecture
 
@@ -100,6 +105,17 @@ printf '%s\n' "$ADMIN_PASSWORD" | pnpm admin:create --email you@example.com --pa
 ```
 
 The command succeeds only when no user exists. Passwords use Argon2id, sessions are database-backed and revocable, cookies are HTTP-only and same-site, and repeated failed sign-ins are rate-limited. See [ADR 0003](docs/decisions/0003-authentication.md).
+
+## Products and physical assets
+
+Create a product definition under **Products**, then use **Assets** to create
+one or more separately tracked physical items. Every item receives a permanent,
+class-based identifier such as `PX-000184`.
+
+Product changes append revisions; existing history is never rewritten. Asset
+identifiers and classes are immutable, hard deletion is rejected, and physical
+specification overrides require a reason. See
+[ADR 0005](docs/decisions/0005-product-revisions-and-asset-identifiers.md).
 
 ## Quality checks
 

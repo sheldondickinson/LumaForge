@@ -4,18 +4,18 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import type { AuthenticatedUser } from "@/lib/auth/service";
 
 const navigation = [
-  "Dashboard",
-  "Assets",
-  "Products",
-  "Inventory",
-  "Locations",
-  "Props and Elements",
-  "Controllers",
-  "Power",
-  "Configurations",
-  "xLights",
-  "Suppliers",
-  "Settings",
+  { label: "Dashboard", href: "/" },
+  { label: "Assets", href: "/assets" },
+  { label: "Products", href: "/products" },
+  { label: "Inventory" },
+  { label: "Locations" },
+  { label: "Props and Elements" },
+  { label: "Controllers" },
+  { label: "Power" },
+  { label: "Configurations" },
+  { label: "xLights" },
+  { label: "Suppliers" },
+  { label: "Settings" },
 ];
 
 export function AppShell({
@@ -73,22 +73,21 @@ export function AppShell({
           className="border-b bg-[var(--surface)] px-4 py-3 lg:min-h-[calc(100vh-4rem)] lg:border-r lg:border-b-0 lg:px-3 lg:py-6"
         >
           <ul className="flex gap-2 overflow-x-auto lg:block lg:space-y-1">
-            {navigation.map((item, index) => (
-              <li key={item} className="shrink-0">
-                {index === 0 ? (
+            {navigation.map((item) => (
+              <li key={item.label} className="shrink-0">
+                {item.href ? (
                   <Link
-                    href="/"
-                    aria-current="page"
-                    className="block rounded-lg bg-[var(--surface-muted)] px-3 py-2 text-sm font-semibold"
+                    href={item.href}
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[var(--surface-muted)]"
                   >
-                    {item}
+                    {item.label}
                   </Link>
                 ) : (
                   <span
                     className="block cursor-not-allowed rounded-lg px-3 py-2 text-sm text-slate-500"
-                    title={`${item} is planned for a later milestone`}
+                    title={`${item.label} is planned for a later milestone`}
                   >
-                    {item}
+                    {item.label}
                   </span>
                 )}
               </li>
