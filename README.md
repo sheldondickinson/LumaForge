@@ -12,8 +12,9 @@ definitions, allocate permanent identifiers to individually tracked physical
 assets, organise hierarchical storage locations, retain asset movement history,
 run location stocktakes, print local QR and Code 128 labels, define display
 elements with named component positions, and retain component replacement
-history. Controller, electrical and xLights workflows remain deferred to
-reviewed milestones.
+history, configure controller outputs and power banks, allocate physical power
+supplies, and generate structured logical deployment identifiers. Electrical
+validation and xLights workflows remain deferred to reviewed milestones.
 
 ## Architecture
 
@@ -142,6 +143,18 @@ next configuration revision without rewriting history.
 General contains, mounted-on and connected-to relationships can be added from
 asset details. PostgreSQL rejects circular active assemblies. See
 [ADR 0007](docs/decisions/0007-effective-dated-assemblies.md).
+
+## Controllers and power
+
+Specialise physical controller assets with a stable controller code, explicit
+outputs and power banks. Assign display-element positions to outputs using
+separate prop and string numbers. LumaForge generates labels such as
+`A-O03-P022-S02`; reassignment changes that logical label without changing any
+permanent asset identifier.
+
+Physical PSU assets use decimal-safe voltage, current and power ratings and can
+be allocated to controller power banks with effective-dated history. See
+[ADR 0008](docs/decisions/0008-controller-power-assignments.md).
 
 ## Quality checks
 

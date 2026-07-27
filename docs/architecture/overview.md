@@ -66,6 +66,15 @@ asset relationships retain replacements as configuration revisions rather than
 overwriting the active assignment. PostgreSQL protects closed history and
 rejects cycles in the active assembly graph.
 
+## Controller and power boundary
+
+Controller and PSU definitions describe reusable capabilities while specialised
+records connect them to permanent physical assets. Outputs, power banks, output
+assignments and PSU allocations are structured records. Logical deployment
+identifiers are derived from controller code, output number, prop number and
+string number; they are not asset identity. Reassignments close previous
+effective-dated rows and retain deployment history.
+
 ## Environment boundaries
 
 Development, test, and production use PostgreSQL 17 and the same migration files, application code, environment-variable names, storage abstraction, and validation rules. They do not share databases, credentials, session secrets, attachment directories, backups, or generated data.

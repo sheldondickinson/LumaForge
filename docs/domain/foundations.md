@@ -31,6 +31,17 @@ not.
 
 User-facing controller outputs use `O` (`O01`, `O02`, and so on). `P` remains reserved for general props.
 
+Controller definitions and PSU definitions remain separate from physical
+controller and PSU assets. A controller asset owns explicit outputs and power
+banks. Output assignments store controller output, display element position,
+prop number and string number independently. Logical identifiers are generated
+from those fields and change on reassignment without changing permanent asset
+IDs.
+
+PSU voltage, current and power ratings use fixed-precision decimal values.
+Power-bank allocations are effective-dated so a replacement supply does not
+erase the previous topology.
+
 ## Relationships and configurations
 
 Composition is not a nullable parent field. Typed relationships identify both assets, optional connectors or ports, sequence, effective dates, configuration revision, notes, and audit details. Assembly relationships must reject cycles.
