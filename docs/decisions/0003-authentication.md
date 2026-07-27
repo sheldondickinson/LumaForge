@@ -13,7 +13,12 @@ Use database-backed local accounts and opaque, server-managed sessions. Password
 
 Administrator creation uses an explicit CLI flow protected by a PostgreSQL transaction-level advisory lock. The command succeeds only while the user table is empty and never accepts a password as a command-line argument. No default credential exists.
 
-Session cookies are HTTP-only, same-site strict, path-scoped to `/`, and secure in production. Sessions expire after 12 hours and can be revoked. Application layouts perform the authoritative database session check; the Next.js proxy only provides an early cookie-presence redirect.
+Session cookies are HTTP-only, same-site strict, and path-scoped to `/`.
+Production uses a secure `__Host-` cookie except for the explicit loopback HTTP
+development container at `localhost`, `127.0.0.1`, or `::1`. Sessions expire
+after 12 hours and can be revoked. Application layouts perform the authoritative
+database session check; the Next.js proxy only provides an early cookie-presence
+redirect.
 
 Failed sign-ins are rate-limited by an HMAC-derived email identifier in PostgreSQL. Sign-in, sign-out, failed authentication, and administrator bootstrap actions create audit events.
 
@@ -21,4 +26,4 @@ Failed sign-ins are rate-limited by an HMAC-derived email identifier in PostgreS
 
 This remains a local authentication system and does not require an external identity provider. Administrator, Editor, and Viewer roles exist in the schema, although only Administrator creation is exposed in this milestone.
 
-Session rotation, password change/recovery, multi-user administration, role assignment, and periodic expired-session cleanup remain future reviewed work. Production requires TLS at the reverse proxy or application boundary for secure cookies.
+Session rotation, password change/recovery, multi-user administration, role assignment, and periodic expired-session cleanup remain future reviewed work. Production requires TLS at the reverse proxy or application boundary for secure cookies. The loopback HTTP exception exists only so production-parity containers can be tested locally across browsers, including Safari; non-loopback production URLs continue to fail secure.
