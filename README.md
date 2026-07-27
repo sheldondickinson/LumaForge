@@ -7,14 +7,15 @@ A self-hosted asset, inventory and configuration management platform for pixel d
 ## Status
 
 LumaForge has a working authenticated application foundation plus operational
-product, asset, inventory and assembly workflows. Users can create revisioned product
-definitions, allocate permanent identifiers to individually tracked physical
-assets, organise hierarchical storage locations, retain asset movement history,
-run location stocktakes, print local QR and Code 128 labels, define display
-elements with named component positions, and retain component replacement
-history, configure controller outputs and power banks, allocate physical power
-supplies, and generate structured logical deployment identifiers. Electrical
-validation and xLights workflows remain deferred to reviewed milestones.
+product, asset, inventory, assembly, controller, power and validation workflows.
+Users can create revisioned product definitions, allocate permanent identifiers
+to individually tracked physical assets, organise hierarchical storage
+locations, retain asset movement history, run location stocktakes, print local
+QR and Code 128 labels, define display elements with named component positions,
+retain component replacement history, configure controller outputs and power
+banks, allocate physical power supplies, generate structured logical deployment
+identifiers, and run documented electrical and compatibility checks. xLights
+workflows remain deferred to a reviewed milestone.
 
 ## Architecture
 
@@ -155,6 +156,17 @@ permanent asset identifier.
 Physical PSU assets use decimal-safe voltage, current and power ratings and can
 be allocated to controller power banks with effective-dated history. See
 [ADR 0008](docs/decisions/0008-controller-power-assignments.md).
+
+## Validation and overrides
+
+Run validation from a controller detail screen to check supported pixel
+protocols, mixed voltages, output node and current limits, and PSU voltage and
+capacity. Every finding records its severity and calculation evidence. Missing
+capacity data is reported explicitly, and permitted overrides require a reason
+and retain the responsible user and time.
+
+Overloaded banks include compatible replacement PSU identifiers when available.
+See [ADR 0009](docs/decisions/0009-validation-rules-and-overrides.md).
 
 ## Quality checks
 

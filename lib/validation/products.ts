@@ -30,6 +30,7 @@ export const productRevisionInputSchema = z.object({
   description: optionalText(2_000),
   voltageV: optionalDecimal,
   pixelCount: optionalPositiveInteger,
+  currentPerPixelMa: optionalDecimal,
   spacingMm: optionalDecimal,
   protocol: optionalText(80),
   connector: optionalText(80),
@@ -47,6 +48,7 @@ export function buildProductSpecifications(input: ProductRevisionInput) {
     Object.entries({
       voltageV: input.voltageV,
       pixelCount: input.pixelCount,
+      currentPerPixelMa: input.currentPerPixelMa,
       spacingMm: input.spacingMm,
       protocol: input.protocol,
       connector: input.connector,

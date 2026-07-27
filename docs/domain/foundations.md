@@ -68,4 +68,13 @@ the same permanent asset identifier for linear scanners.
 
 ## Validation
 
-Validation belongs in a dedicated domain layer and produces information, recommendation, warning, critical, or blocking results. Any permitted override records its rule, severity, user, reason, time, and configuration revision. Blocking overrides require a documented reason.
+Validation belongs in a dedicated domain layer and produces information,
+recommendation, warning, critical, or blocking results. Protocol, voltage, node,
+output-current and PSU-capacity rules use structured facts and fixed-precision
+decimal calculations. Missing capacity data is an informational result rather
+than a silent pass.
+
+Each run and result is immutable. Any permitted override appends its user,
+reason and time without rewriting the finding. Compatible replacement PSUs are
+reported when their voltage, current and power ratings satisfy an overloaded
+bank.

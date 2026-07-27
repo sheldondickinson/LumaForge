@@ -69,6 +69,14 @@ export const assetRelationshipType = pgEnum("asset_relationship_type", [
   "component_of",
 ]);
 
+export const validationSeverity = pgEnum("validation_severity", [
+  "information",
+  "recommendation",
+  "warning",
+  "critical",
+  "blocking",
+]);
+
 export const users = pgTable(
   "users",
   {
@@ -705,6 +713,11 @@ export const controllerDefinitions = pgTable(
     manufacturer: text("manufacturer"),
     model: text("model"),
     protocol: text("protocol"),
+    maximumNodesPerOutput: integer("maximum_nodes_per_output"),
+    maximumCurrentPerOutputA: numeric("maximum_current_per_output_a", {
+      precision: 12,
+      scale: 3,
+    }),
     outputCount: integer("output_count").notNull(),
     powerBankCount: integer("power_bank_count").notNull(),
     notes: text("notes"),
@@ -730,6 +743,14 @@ export const controllerDefinitions = pgTable(
     check(
       "controller_definitions_power_bank_count_valid",
       sql`${table.powerBankCount} between 1 and 32`,
+    ),
+    check(
+      "controller_definitions_maximum_nodes_valid",
+      sql`${table.maximumNodesPerOutput} is null or ${table.maximumNodesPerOutput} > 0`,
+    ),
+    check(
+      "controller_definitions_maximum_current_valid",
+      sql`${table.maximumCurrentPerOutputA} is null or ${table.maximumCurrentPerOutputA} > 0`,
     ),
   ],
 );
@@ -972,6 +993,91 @@ export const powerAllocations = pgTable(
     ),
     check(
       "power_allocations_reason_not_empty",
+      sql`length(trim(${table.reason})) > 0`,
+    ),
+  ],
+);
+
+export const validationRuns = pgTable(
+  "validation_runs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    controllerAssetId: uuid("controller_asset_id")
+      .notNull()
+      .references(() => controllerAssets.id, { onDelete: "restrict" }),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("validation_runs_controller_created_index").on(
+      table.controllerAssetId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export const validationResults = pgTable(
+  "validation_results",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    validationRunId: uuid("validation_run_id")
+      .notNull()
+      .references(() => validationRuns.id, { onDelete: "restrict" }),
+    ruleCode: text("rule_code").notNull(),
+    severity: validationSeverity("severity").notNull(),
+    scopeType: text("scope_type").notNull(),
+    scopeId: uuid("scope_id"),
+    message: text("message").notNull(),
+    evidence: jsonb("evidence").$type<Record<string, unknown>>().notNull(),
+    overrideAllowed: boolean("override_allowed").default(true).notNull(),
+  },
+  (table) => [
+    index("validation_results_run_severity_index").on(
+      table.validationRunId,
+      table.severity,
+    ),
+    check(
+      "validation_results_rule_code_format",
+      sql`${table.ruleCode} ~ '^[A-Z][A-Z0-9_]{2,63}$'`,
+    ),
+    check(
+      "validation_results_message_not_empty",
+      sql`length(trim(${table.message})) > 0`,
+    ),
+  ],
+);
+
+export const validationOverrides = pgTable(
+  "validation_overrides",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    validationResultId: uuid("validation_result_id")
+      .notNull()
+      .references(() => validationResults.id, { onDelete: "restrict" }),
+    reason: text("reason").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("validation_overrides_result_unique").on(
+      table.validationResultId,
+    ),
+    check(
+      "validation_overrides_reason_not_empty",
       sql`length(trim(${table.reason})) > 0`,
     ),
   ],

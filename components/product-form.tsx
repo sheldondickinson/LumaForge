@@ -15,6 +15,7 @@ type ProductFormValues = {
   description?: string | null;
   voltageV?: string | number | null;
   pixelCount?: string | number | null;
+  currentPerPixelMa?: string | number | null;
   spacingMm?: string | number | null;
   protocol?: string | null;
   connector?: string | null;
@@ -135,6 +136,17 @@ export function ProductForm({
               placeholder="100"
             />
             <FieldError errors={state.errors} name="pixelCount" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium">Current per pixel (mA)</span>
+            <input
+              name="currentPerPixelMa"
+              inputMode="decimal"
+              defaultValue={initialValues.currentPerPixelMa ?? ""}
+              className="min-h-11 w-full rounded-lg border bg-[var(--surface)] px-3"
+              placeholder="60"
+            />
+            <FieldError errors={state.errors} name="currentPerPixelMa" />
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium">Spacing (mm)</span>

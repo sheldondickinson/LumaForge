@@ -54,6 +54,27 @@ export function ControllerForm({
           />
         </label>
         <label className="space-y-2">
+          <span className="text-sm font-medium">Maximum nodes per output</span>
+          <input
+            name="maximumNodesPerOutput"
+            type="number"
+            min={1}
+            placeholder="1024"
+            className="min-h-11 w-full rounded-lg border bg-[var(--surface)] px-3"
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-sm font-medium">
+            Maximum current per output (A)
+          </span>
+          <input
+            name="maximumCurrentPerOutputA"
+            inputMode="decimal"
+            placeholder="5"
+            className="min-h-11 w-full rounded-lg border bg-[var(--surface)] px-3"
+          />
+        </label>
+        <label className="space-y-2">
           <span className="text-sm font-medium">Controller code</span>
           <input
             name="controllerCode"
@@ -80,11 +101,11 @@ export function ControllerForm({
           />
         </label>
         <label className="space-y-2">
-          <span className="text-sm font-medium">Protocol</span>
+          <span className="text-sm font-medium">Supported pixel protocols</span>
           <input
             name="protocol"
             maxLength={80}
-            placeholder="E1.31 / DDP"
+            placeholder="WS2811, WS2812B"
             className="min-h-11 w-full rounded-lg border bg-[var(--surface)] px-3"
           />
         </label>

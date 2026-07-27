@@ -52,6 +52,9 @@ describe.skipIf(!hasIsolatedDatabase)("product and asset integration", () => {
 
     await connection.client`
       truncate table
+        validation_overrides,
+        validation_results,
+        validation_runs,
         power_allocations,
         output_assignments,
         controller_outputs,

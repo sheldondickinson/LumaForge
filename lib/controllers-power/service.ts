@@ -23,6 +23,8 @@ export type ControllerDetail = ControllerSummary & {
   manufacturer: string | null;
   model: string | null;
   protocol: string | null;
+  maximumNodesPerOutput: number | null;
+  maximumCurrentPerOutputA: string | null;
   outputs: Array<{
     id: string;
     outputNumber: number;
@@ -167,12 +169,14 @@ export async function createController(
     const [definition] = await transaction<{ id: string }[]>`
       insert into controller_definitions (
         name, manufacturer, model, protocol, output_count, power_bank_count,
-        notes, created_by
+        maximum_nodes_per_output, maximum_current_per_output_a, notes, created_by
       )
       values (
         ${validated.name}, ${validated.manufacturer ?? null},
         ${validated.model ?? null}, ${validated.protocol ?? null},
         ${validated.outputCount}, ${validated.powerBankCount},
+        ${validated.maximumNodesPerOutput ?? null},
+        ${validated.maximumCurrentPerOutputA ?? null},
         ${validated.notes ?? null}, ${user.id}
       )
       returning id
@@ -367,6 +371,8 @@ export async function getControllerDetail(
       controller_definitions.manufacturer,
       controller_definitions.model,
       controller_definitions.protocol,
+      controller_definitions.maximum_nodes_per_output as "maximumNodesPerOutput",
+      controller_definitions.maximum_current_per_output_a as "maximumCurrentPerOutputA",
       controller_definitions.output_count as "outputCount",
       controller_definitions.power_bank_count as "powerBankCount",
       (

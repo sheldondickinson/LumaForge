@@ -11,6 +11,10 @@ import {
 } from "@/lib/controllers-power/service";
 import { assertTrustedOrigin } from "@/lib/security/origin";
 import {
+  overrideValidationResult,
+  runControllerValidation,
+} from "@/lib/validations/service";
+import {
   assignOutputInputSchema,
   createControllerInputSchema,
 } from "@/lib/validation/controllers-power";
@@ -30,6 +34,8 @@ export async function createControllerAction(
     controllerCode: formData.get("controllerCode"),
     outputCount: formData.get("outputCount"),
     powerBankCount: formData.get("powerBankCount"),
+    maximumNodesPerOutput: formData.get("maximumNodesPerOutput"),
+    maximumCurrentPerOutputA: formData.get("maximumCurrentPerOutputA"),
     notes: formData.get("notes"),
   });
   if (!result.success) {
@@ -81,6 +87,40 @@ export async function assignOutputAction(
         error instanceof Error
           ? error.message
           : "The output assignment could not be created.",
+    };
+  }
+  revalidatePath(`/controllers/${controllerId}`);
+  redirect(`/controllers/${controllerId}`);
+}
+
+export async function runControllerValidationAction(controllerId: string) {
+  assertTrustedOrigin((await headers()).get("origin"));
+  const { user } = await requireCurrentAuthentication();
+  await runControllerValidation(controllerId, user);
+  revalidatePath(`/controllers/${controllerId}`);
+  redirect(`/controllers/${controllerId}`);
+}
+
+export async function overrideValidationResultAction(
+  controllerId: string,
+  resultId: string,
+  _previous: FormActionState,
+  formData: FormData,
+): Promise<FormActionState> {
+  assertTrustedOrigin((await headers()).get("origin"));
+  const { user } = await requireCurrentAuthentication();
+  try {
+    await overrideValidationResult(
+      resultId,
+      { reason: formData.get("reason") },
+      user,
+    );
+  } catch (error) {
+    return {
+      message:
+        error instanceof Error
+          ? error.message
+          : "The override was not recorded.",
     };
   }
   revalidatePath(`/controllers/${controllerId}`);

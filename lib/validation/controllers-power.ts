@@ -34,6 +34,16 @@ export const createControllerInputSchema = z.object({
     .regex(/^[A-Z][A-Z0-9]{0,7}$/, "Use 1–8 uppercase letters or digits."),
   outputCount: z.coerce.number().int().min(1).max(128),
   powerBankCount: z.coerce.number().int().min(1).max(32),
+  maximumNodesPerOutput: z.preprocess(
+    (value) =>
+      typeof value === "string" && value.trim() === "" ? undefined : value,
+    z.coerce.number().int().positive().max(1_000_000).optional(),
+  ),
+  maximumCurrentPerOutputA: z.preprocess(
+    (value) =>
+      typeof value === "string" && value.trim() === "" ? undefined : value,
+    positiveDecimal("Maximum output current").optional(),
+  ),
   notes: optionalText(1000),
 });
 
