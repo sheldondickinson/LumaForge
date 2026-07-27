@@ -80,19 +80,27 @@ jobs:
       - name: Build production application
         run: pnpm build
 
-      - name: Create isolated browser-test administrator
-        run: printf '%s\n' "$E2E_ADMIN_PASSWORD" | pnpm admin:create --email "$E2E_ADMIN_EMAIL" --password-stdin
+      - name: Build and validate production Docker image
+        run: |
+          docker build \
+            --build-arg VERSION=ci \
+            --build-arg VCS_REF=${{ github.sha }} \
+            --build-arg BUILD_DATE=ci \
+            --tag lumaforge:ci \
+            .
+          printf '%s\n' "$E2E_ADMIN_PASSWORD" | docker run --rm --interactive \
+            --network host \
+            --env DATABASE_URL \
+            --env APP_URL \
+            --env AUTH_SECRET \
+            --env NODE_ENV \
+            lumaforge:ci \
+            node scripts/create-administrator.mjs \
+            --email "$E2E_ADMIN_EMAIL" \
+            --password-stdin
 
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run browser smoke test
         run: pnpm test:e2e
-
-      - name: Validate Docker image build
-        run: >-
-          docker build
-          --build-arg VERSION=ci
-          --build-arg VCS_REF=${{ github.sha }}
-          --build-arg BUILD_DATE=ci
-          .
