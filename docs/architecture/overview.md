@@ -43,6 +43,21 @@ Permanent asset identifiers are allocated inside PostgreSQL transactions by a
 per-class counter. Database constraints and triggers protect revision history,
 asset identity, class consistency and retirement-only lifecycle handling.
 
+## Location and stocktake boundary
+
+Location hierarchy, effective-dated asset assignments and stocktake results
+are retained in PostgreSQL. The open assignment represents current location;
+closed assignments are immutable history. PostgreSQL prevents hierarchy cycles
+and hard deletion of location or inventory history.
+
+Stocktakes compare scans with the assignment state for a selected location
+subtree. They report missing, moved and unexpected assets without silently
+changing an asset's recorded location.
+
+QR and Code 128 labels are generated inside the application. QR payloads use a
+relative authenticated scan route so stored label data is not coupled to a
+development or production hostname.
+
 ## Environment boundaries
 
 Development, test, and production use PostgreSQL 17 and the same migration files, application code, environment-variable names, storage abstraction, and validation rules. They do not share databases, credentials, session secrets, attachment directories, backups, or generated data.
