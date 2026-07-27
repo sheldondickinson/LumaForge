@@ -6,16 +6,14 @@ A self-hosted asset, inventory and configuration management platform for pixel d
 
 ## Status
 
-LumaForge has a working authenticated application foundation plus the first
-operational product and asset workflows. Users can create revisioned product
+LumaForge has a working authenticated application foundation plus operational
+product, asset, inventory and assembly workflows. Users can create revisioned product
 definitions, allocate permanent identifiers to individually tracked physical
 assets, organise hierarchical storage locations, retain asset movement history,
-run location stocktakes, and print local QR and Code 128 labels. Relationship,
-controller, electrical and xLights workflows remain deferred to reviewed
-milestones.
-
-The product and asset milestone and its stacked location and inventory
-milestone remain under review.
+run location stocktakes, print local QR and Code 128 labels, define display
+elements with named component positions, and retain component replacement
+history. Controller, electrical and xLights workflows remain deferred to
+reviewed milestones.
 
 ## Architecture
 
@@ -133,6 +131,17 @@ Each asset has a printable QR and Code 128 label. QR codes use a relative
 authenticated route such as `/scan/assets/PX-000184`, keeping labels portable
 between local and future NAS hostnames. See
 [ADR 0006](docs/decisions/0006-effective-dated-locations-and-stocktakes.md).
+
+## Relationships and assemblies
+
+Create a display element from an existing physical prop asset, then define each
+component position explicitly. Assignments are typed and effective-dated.
+Replacing a physical component closes the previous assignment and creates the
+next configuration revision without rewriting history.
+
+General contains, mounted-on and connected-to relationships can be added from
+asset details. PostgreSQL rejects circular active assemblies. See
+[ADR 0007](docs/decisions/0007-effective-dated-assemblies.md).
 
 ## Quality checks
 

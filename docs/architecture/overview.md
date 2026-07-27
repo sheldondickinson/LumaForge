@@ -58,6 +58,14 @@ QR and Code 128 labels are generated inside the application. QR payloads use a
 relative authenticated scan route so stored label data is not coupled to a
 development or production hostname.
 
+## Relationship and assembly boundary
+
+Display elements attach assembly metadata to physical prop assets. Ordered,
+named component positions describe the required physical roles. Effective-dated
+asset relationships retain replacements as configuration revisions rather than
+overwriting the active assignment. PostgreSQL protects closed history and
+rejects cycles in the active assembly graph.
+
 ## Environment boundaries
 
 Development, test, and production use PostgreSQL 17 and the same migration files, application code, environment-variable names, storage abstraction, and validation rules. They do not share databases, credentials, session secrets, attachment directories, backups, or generated data.

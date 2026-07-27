@@ -12,6 +12,6 @@ Delivery proceeds through reviewed milestones:
 8. Verified NAS deployment, backup, restore, and rollback.
 9. Versioned, read-only xLights import and reconciliation.
 
-The current milestone implements item 4 as a stacked change on the product and
-asset foundation. Relationship, controller, electrical, deployment and xLights
-modules remain separate reviewed changes.
+The current milestone implements item 5 on the merged product, asset and
+inventory foundations. Controller, electrical, deployment and xLights modules
+remain separate reviewed changes.
