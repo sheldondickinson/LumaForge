@@ -5,10 +5,12 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { FormActionState } from "@/lib/actions/state";
 import { createAssets } from "@/lib/assets/service";
+import { createAssetRelationship } from "@/lib/assemblies/service";
 import { requireCurrentAuthentication } from "@/lib/auth/current-user";
 import { moveAsset } from "@/lib/locations/service";
 import { assertTrustedOrigin } from "@/lib/security/origin";
 import { createAssetsInputSchema } from "@/lib/validation/assets";
+import { createRelationshipInputSchema } from "@/lib/validation/assemblies";
 import { moveAssetInputSchema } from "@/lib/validation/locations";
 
 export async function createAssetsAction(
@@ -91,5 +93,39 @@ export async function moveAssetAction(
   revalidatePath("/assets");
   revalidatePath(`/assets/${assetId}`);
   revalidatePath("/locations");
+  redirect(`/assets/${assetId}`);
+}
+
+export async function createAssetRelationshipAction(
+  assetId: string,
+  _previousState: FormActionState,
+  formData: FormData,
+): Promise<FormActionState> {
+  assertTrustedOrigin((await headers()).get("origin"));
+  const { user } = await requireCurrentAuthentication();
+  const result = createRelationshipInputSchema.safeParse({
+    relationshipType: formData.get("relationshipType"),
+    targetAssetId: formData.get("targetAssetId"),
+    sourceConnector: formData.get("sourceConnector"),
+    targetConnector: formData.get("targetConnector"),
+    notes: formData.get("notes"),
+  });
+  if (!result.success) {
+    return {
+      message: "Review the relationship details.",
+      errors: result.error.flatten().fieldErrors,
+    };
+  }
+  try {
+    await createAssetRelationship(assetId, result.data, user);
+  } catch (error) {
+    return {
+      message:
+        error instanceof Error
+          ? error.message
+          : "The relationship could not be created.",
+    };
+  }
+  revalidatePath(`/assets/${assetId}`);
   redirect(`/assets/${assetId}`);
 }

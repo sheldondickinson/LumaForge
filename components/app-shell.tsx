@@ -9,7 +9,7 @@ const navigation = [
   { label: "Products", href: "/products" },
   { label: "Stocktakes", href: "/stocktakes" },
   { label: "Locations", href: "/locations" },
-  { label: "Props and Elements" },
+  { label: "Props and Elements", href: "/elements" },
   { label: "Controllers" },
   { label: "Power" },
   { label: "Configurations" },
