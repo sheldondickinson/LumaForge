@@ -31,8 +31,8 @@ test("protects the dashboard with local administrator sign-in", async ({
   await expect(page.getByText("Foundation only")).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
 
-  await page.getByRole("link", { name: "Products" }).click();
-  await page.getByRole("link", { name: "Create product" }).click();
+  await page.getByRole("link", { name: "Products", exact: true }).click();
+  await page.getByRole("link", { name: "Create product", exact: true }).click();
   await page
     .getByLabel("Asset class")
     .selectOption({ label: "Pixel string (PX)" });
@@ -54,8 +54,8 @@ test("protects the dashboard with local administrator sign-in", async ({
   ).toBeVisible();
   await expect(page.getByText("Revision 1", { exact: true })).toBeVisible();
 
-  await page.getByRole("link", { name: "Assets" }).click();
-  await page.getByRole("link", { name: "Create assets" }).click();
+  await page.getByRole("link", { name: "Assets", exact: true }).click();
+  await page.getByRole("link", { name: "Create assets", exact: true }).click();
   await page
     .getByLabel("Product revision")
     .selectOption({ label: "12 V WS2811 bullet pixel string — revision 1" });
@@ -64,10 +64,18 @@ test("protects the dashboard with local administrator sign-in", async ({
   await page.getByRole("button", { name: "Create assets" }).click();
 
   await expect(page).toHaveURL("/assets");
-  await expect(page.getByText("PX-000001")).toBeVisible();
-  await expect(page.getByText("PX-000002")).toBeVisible();
-  await expect(page.getByText("Front fence pixels 1")).toBeVisible();
-  await expect(page.getByText("Front fence pixels 2")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "PX-000001", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "PX-000002", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Front fence pixels 1", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Front fence pixels 2", exact: true }),
+  ).toBeVisible();
 
   const createLocation = async ({
     type,
@@ -80,8 +88,10 @@ test("protects the dashboard with local administrator sign-in", async ({
     name: string;
     parentCode?: string;
   }) => {
-    await page.getByRole("link", { name: "Locations" }).click();
-    await page.getByRole("link", { name: "Create location" }).click();
+    await page.getByRole("link", { name: "Locations", exact: true }).click();
+    await page
+      .getByRole("link", { name: "Create location", exact: true })
+      .click();
     await page.getByLabel("Location type").selectOption(type);
     if (parentCode) {
       const parentValue = await page
@@ -123,7 +133,7 @@ test("protects the dashboard with local administrator sign-in", async ({
   });
 
   for (const assetIdentifier of ["PX-000001", "PX-000002"]) {
-    await page.getByRole("link", { name: "Assets" }).click();
+    await page.getByRole("link", { name: "Assets", exact: true }).click();
     await page
       .getByRole("link", { name: assetIdentifier, exact: true })
       .click();
@@ -140,9 +150,11 @@ test("protects the dashboard with local administrator sign-in", async ({
     await expect(page.getByText("TOTE-01 · Pixel tote").first()).toBeVisible();
   }
 
-  await page.getByRole("link", { name: "Assets" }).click();
+  await page.getByRole("link", { name: "Assets", exact: true }).click();
   await page.getByRole("link", { name: "PX-000001", exact: true }).click();
-  await page.getByRole("link", { name: "Print QR and Code 128 label" }).click();
+  await page
+    .getByRole("link", { name: "Print QR and Code 128 label", exact: true })
+    .click();
   await expect(page.getByAltText("QR code for PX-000001")).toBeVisible();
   await expect(page.getByText("/scan/assets/PX-000001")).toBeVisible();
 
@@ -152,8 +164,10 @@ test("protects the dashboard with local administrator sign-in", async ({
     page.getByRole("heading", { name: "PX-000001", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Stocktakes" }).click();
-  await page.getByRole("link", { name: "Start stocktake" }).click();
+  await page.getByRole("link", { name: "Stocktakes", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Start stocktake", exact: true })
+    .click();
   const shedValue = await page
     .getByLabel("Location scope")
     .locator("option")
