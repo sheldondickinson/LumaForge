@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   bigint,
   boolean,
   check,
@@ -34,6 +35,30 @@ export const assetStatus = pgEnum("asset_status", [
   "retired",
   "lost",
   "disposed",
+]);
+
+export const locationKind = pgEnum("location_kind", [
+  "shed",
+  "rack",
+  "shelf",
+  "tote",
+  "zone",
+  "bin",
+  "other",
+]);
+
+export const stocktakeStatus = pgEnum("stocktake_status", [
+  "draft",
+  "in_progress",
+  "completed",
+  "cancelled",
+]);
+
+export const stocktakeOutcome = pgEnum("stocktake_outcome", [
+  "confirmed",
+  "moved",
+  "unexpected",
+  "missing",
 ]);
 
 export const users = pgTable(
@@ -346,6 +371,191 @@ export const assets = pgTable(
     check(
       "assets_retirement_consistent",
       sql`(${table.status} = 'retired' and ${table.retiredAt} is not null and length(trim(coalesce(${table.retirementReason}, ''))) > 0) or (${table.status} <> 'retired' and ${table.retiredAt} is null and ${table.retirementReason} is null)`,
+    ),
+  ],
+);
+
+export const locations = pgTable(
+  "locations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    parentId: uuid("parent_id").references((): AnyPgColumn => locations.id, {
+      onDelete: "restrict",
+    }),
+    kind: locationKind("kind").notNull(),
+    code: text("code").notNull(),
+    name: text("name").notNull(),
+    notes: text("notes"),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+    archivedAt: timestamp("archived_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+  },
+  (table) => [
+    uniqueIndex("locations_code_unique").on(table.code),
+    index("locations_parent_index").on(table.parentId),
+    index("locations_kind_index").on(table.kind),
+    index("locations_archived_at_index").on(table.archivedAt),
+    check(
+      "locations_code_format",
+      sql`${table.code} ~ '^[A-Z][A-Z0-9-]{1,31}$'`,
+    ),
+    check("locations_name_not_empty", sql`length(trim(${table.name})) > 0`),
+    check(
+      "locations_not_own_parent",
+      sql`${table.parentId} is null or ${table.parentId} <> ${table.id}`,
+    ),
+  ],
+);
+
+export const assetLocationAssignments = pgTable(
+  "asset_location_assignments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "restrict" }),
+    locationId: uuid("location_id").references(() => locations.id, {
+      onDelete: "restrict",
+    }),
+    startedAt: timestamp("started_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+    endedAt: timestamp("ended_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    reason: text("reason").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    uniqueIndex("asset_location_assignments_current_asset_unique")
+      .on(table.assetId)
+      .where(sql`${table.endedAt} is null`),
+    index("asset_location_assignments_asset_started_index").on(
+      table.assetId,
+      table.startedAt,
+    ),
+    index("asset_location_assignments_location_current_index").on(
+      table.locationId,
+      table.endedAt,
+    ),
+    check(
+      "asset_location_assignments_reason_not_empty",
+      sql`length(trim(${table.reason})) > 0`,
+    ),
+    check(
+      "asset_location_assignments_dates_valid",
+      sql`${table.endedAt} is null or ${table.endedAt} >= ${table.startedAt}`,
+    ),
+  ],
+);
+
+export const stocktakes = pgTable(
+  "stocktakes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    locationId: uuid("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    status: stocktakeStatus("status").default("draft").notNull(),
+    notes: text("notes"),
+    startedAt: timestamp("started_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    completedAt: timestamp("completed_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    completedBy: uuid("completed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("stocktakes_location_created_index").on(
+      table.locationId,
+      table.createdAt,
+    ),
+    index("stocktakes_status_index").on(table.status),
+    check("stocktakes_name_not_empty", sql`length(trim(${table.name})) > 0`),
+    check(
+      "stocktakes_lifecycle_consistent",
+      sql`(${table.status} = 'draft' and ${table.startedAt} is null and ${table.completedAt} is null) or (${table.status} = 'in_progress' and ${table.startedAt} is not null and ${table.completedAt} is null) or (${table.status} = 'completed' and ${table.startedAt} is not null and ${table.completedAt} is not null and ${table.completedAt} >= ${table.startedAt}) or (${table.status} = 'cancelled' and ${table.completedAt} is null)`,
+    ),
+  ],
+);
+
+export const stocktakeEntries = pgTable(
+  "stocktake_entries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    stocktakeId: uuid("stocktake_id")
+      .notNull()
+      .references(() => stocktakes.id, { onDelete: "restrict" }),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "restrict" }),
+    expectedLocationId: uuid("expected_location_id").references(
+      () => locations.id,
+      { onDelete: "restrict" },
+    ),
+    observedLocationId: uuid("observed_location_id").references(
+      () => locations.id,
+      { onDelete: "restrict" },
+    ),
+    outcome: stocktakeOutcome("outcome").notNull(),
+    scannedAt: timestamp("scanned_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    scannedBy: uuid("scanned_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    notes: text("notes"),
+  },
+  (table) => [
+    uniqueIndex("stocktake_entries_stocktake_asset_unique").on(
+      table.stocktakeId,
+      table.assetId,
+    ),
+    index("stocktake_entries_stocktake_outcome_index").on(
+      table.stocktakeId,
+      table.outcome,
+    ),
+    check(
+      "stocktake_entries_scan_consistent",
+      sql`(${table.outcome} = 'missing' and ${table.scannedAt} is null and ${table.scannedBy} is null) or (${table.outcome} <> 'missing' and ${table.scannedAt} is not null)`,
     ),
   ],
 );

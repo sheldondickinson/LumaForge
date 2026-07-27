@@ -37,7 +37,7 @@ export default async function AssetsPage({
           type="search"
           name="q"
           defaultValue={query}
-          placeholder="Search asset ID, name, class or product"
+          placeholder="Search asset ID, name, product or location"
           className="min-h-11 min-w-0 flex-1 rounded-lg border bg-[var(--surface)] px-3"
         />
         <button
@@ -67,6 +67,9 @@ export default async function AssetsPage({
                 <th className="hidden px-4 py-3 font-semibold sm:table-cell">
                   Product
                 </th>
+                <th className="hidden px-4 py-3 font-semibold md:table-cell">
+                  Location
+                </th>
                 <th className="px-4 py-3 font-semibold">Status</th>
               </tr>
             </thead>
@@ -86,6 +89,11 @@ export default async function AssetsPage({
                     {asset.productName
                       ? `${asset.productName} · r${asset.productRevisionNumber}`
                       : asset.assetClassName}
+                  </td>
+                  <td className="hidden px-4 py-3 md:table-cell">
+                    {asset.locationCode
+                      ? `${asset.locationCode} · ${asset.locationName}`
+                      : "Unlocated"}
                   </td>
                   <td className="px-4 py-3">
                     {formatAssetStatus(asset.status)}

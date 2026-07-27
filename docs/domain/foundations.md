@@ -37,6 +37,24 @@ Composition is not a nullable parent field. Typed relationships identify both as
 
 Assignments belong to versioned configurations so draft, installed, active, and archived states can coexist without overwriting history.
 
+## Locations and inventory
+
+Locations form a hierarchy using stable codes such as `SHED-01`, `RACK-01`,
+`SHELF-01` and `TOTE-01`. Friendly names and hierarchy paths are display
+metadata; they are never encoded into permanent asset identifiers.
+
+An asset movement closes its current effective-dated location assignment and
+appends the next assignment in one transaction. Closed assignments are
+immutable. An explicit unlocated assignment records removal from a known
+location without erasing where the asset was previously stored.
+
+Stocktakes are scoped to a location and its descendants. Scans retain both the
+expected and observed location. Completion records unscanned expected assets
+as missing, but it never changes asset location automatically.
+
+Asset QR labels contain a portable relative scan route. Code 128 labels encode
+the same permanent asset identifier for linear scanners.
+
 ## Validation
 
 Validation belongs in a dedicated domain layer and produces information, recommendation, warning, critical, or blocking results. Any permitted override records its rule, severity, user, reason, time, and configuration revision. Blocking overrides require a documented reason.

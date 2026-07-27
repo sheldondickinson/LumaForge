@@ -13,6 +13,8 @@ export type AssetSummary = {
   assetClassName: string;
   productName: string | null;
   productRevisionNumber: number | null;
+  locationCode: string | null;
+  locationName: string | null;
   createdAt: string;
 };
 
@@ -52,18 +54,31 @@ export async function listAssets(query = ""): Promise<AssetSummary[]> {
       asset_classes.name as "assetClassName",
       product_revisions.name as "productName",
       product_revisions.revision_number as "productRevisionNumber",
+      current_location.code as "locationCode",
+      current_location.name as "locationName",
       assets.created_at as "createdAt"
     from assets
     inner join asset_classes
       on asset_classes.id = assets.asset_class_id
     left join product_revisions
       on product_revisions.id = assets.product_revision_id
+    left join lateral (
+      select locations.code, locations.name
+      from asset_location_assignments
+      left join locations
+        on locations.id = asset_location_assignments.location_id
+      where asset_location_assignments.asset_id = assets.id
+        and asset_location_assignments.ended_at is null
+      limit 1
+    ) current_location on true
     where
       ${search} = ''
       or assets.asset_identifier ilike ${`%${search}%`}
       or assets.friendly_name ilike ${`%${search}%`}
       or asset_classes.name ilike ${`%${search}%`}
       or coalesce(product_revisions.name, '') ilike ${`%${search}%`}
+      or coalesce(current_location.code, '') ilike ${`%${search}%`}
+      or coalesce(current_location.name, '') ilike ${`%${search}%`}
     order by assets.created_at desc, assets.asset_identifier
     limit 250
   `;
@@ -89,12 +104,23 @@ export async function getAssetDetail(
       assets.retirement_reason as "retirementReason",
       asset_classes.name as "assetClassName",
       product_revisions.name as "productName",
-      product_revisions.revision_number as "productRevisionNumber"
+      product_revisions.revision_number as "productRevisionNumber",
+      current_location.code as "locationCode",
+      current_location.name as "locationName"
     from assets
     inner join asset_classes
       on asset_classes.id = assets.asset_class_id
     left join product_revisions
       on product_revisions.id = assets.product_revision_id
+    left join lateral (
+      select locations.code, locations.name
+      from asset_location_assignments
+      left join locations
+        on locations.id = asset_location_assignments.location_id
+      where asset_location_assignments.asset_id = assets.id
+        and asset_location_assignments.ended_at is null
+      limit 1
+    ) current_location on true
     where assets.id = ${assetId}
   `;
 

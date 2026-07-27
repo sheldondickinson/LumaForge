@@ -6,8 +6,10 @@ import { revalidatePath } from "next/cache";
 import type { FormActionState } from "@/lib/actions/state";
 import { createAssets } from "@/lib/assets/service";
 import { requireCurrentAuthentication } from "@/lib/auth/current-user";
+import { moveAsset } from "@/lib/locations/service";
 import { assertTrustedOrigin } from "@/lib/security/origin";
 import { createAssetsInputSchema } from "@/lib/validation/assets";
+import { moveAssetInputSchema } from "@/lib/validation/locations";
 
 export async function createAssetsAction(
   _previousState: FormActionState,
@@ -53,4 +55,41 @@ export async function createAssetsAction(
 
   revalidatePath("/assets");
   redirect(result.data.quantity === 1 ? `/assets/${firstAssetId}` : "/assets");
+}
+
+export async function moveAssetAction(
+  assetId: string,
+  _previousState: FormActionState,
+  formData: FormData,
+): Promise<FormActionState> {
+  const requestHeaders = await headers();
+  assertTrustedOrigin(requestHeaders.get("origin"));
+  const { user } = await requireCurrentAuthentication();
+  const result = moveAssetInputSchema.safeParse({
+    locationId: formData.get("locationId"),
+    reason: formData.get("reason"),
+  });
+
+  if (!result.success) {
+    return {
+      message: "Review the movement details.",
+      errors: result.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await moveAsset(assetId, result.data, user);
+  } catch (error) {
+    return {
+      message:
+        error instanceof Error
+          ? error.message
+          : "The asset could not be moved.",
+    };
+  }
+
+  revalidatePath("/assets");
+  revalidatePath(`/assets/${assetId}`);
+  revalidatePath("/locations");
+  redirect(`/assets/${assetId}`);
 }

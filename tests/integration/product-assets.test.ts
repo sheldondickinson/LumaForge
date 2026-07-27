@@ -51,7 +51,14 @@ describe.skipIf(!hasIsolatedDatabase)("product and asset integration", () => {
     }
 
     await connection.client`
-      truncate table assets, product_revisions, product_definitions
+      truncate table
+        stocktake_entries,
+        stocktakes,
+        asset_location_assignments,
+        locations,
+        assets,
+        product_revisions,
+        product_definitions
     `;
     await connection.client`
       update asset_identifier_sequences
