@@ -49,6 +49,7 @@ test("protects the dashboard with local administrator sign-in", async ({
   await expect(
     page.getByRole("heading", {
       name: "12 V WS2811 bullet pixel string",
+      exact: true,
     }),
   ).toBeVisible();
   await expect(page.getByText("Revision 1", { exact: true })).toBeVisible();
