@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24-alpine AS base
+FROM node:25-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -22,7 +22,7 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
 
-FROM node:24-alpine AS runner
+FROM node:25-alpine AS runner
 ARG BUILD_DATE="unknown"
 ARG VCS_REF="unknown"
 ARG VERSION="0.0.0"
